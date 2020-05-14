@@ -1,6 +1,6 @@
 
 
-## A typical top-level directory layout
+## top-level directory layout
 
     .
     ├── client_simulator        # test call proxy server 
