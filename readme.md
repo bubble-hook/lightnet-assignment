@@ -7,6 +7,7 @@
     ├── internal                # contains the real logic
     ├── proxy                   # handle request and forward to internal
     ├── shared                  # shared func 
+    ├── calculator_proto        # GRPC 
 
 
 
@@ -20,7 +21,7 @@ run.sh
 echo  "Starting Internal Server"
 cd ./internal && PORT=9000 go run main.go &
 echo  "Starting Proxy Server"
-cd ./proxy && PORT=9001 SERVICE_ENDPOINT="http://localhost:9000" go run main.go &
+cd ./proxy && PORT=9001 SERVICE_ENDPOINT="localhost:9000" go run main.go &
 ```
 or 
 
