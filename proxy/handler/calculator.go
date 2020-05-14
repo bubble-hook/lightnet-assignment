@@ -1,14 +1,15 @@
 package handler
 
 import (
-	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"time"
 
+	pb "github.com/bubble-hook/lightnet-assignment/calculator_proto"
 	"github.com/bubble-hook/lightnet-assignment/shared"
+	"google.golang.org/grpc"
 )
 
 // Calculate Calculate
@@ -22,35 +23,46 @@ func Calculate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	internalServiceEnpoint := os.Getenv("SERVICE_ENDPOINT")
-	reqeustPayload, err := json.Marshal(request)
+
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+	conn, err := grpc.Dial(internalServiceEnpoint, opts...)
 	if err != nil {
 		shared.RespondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	req, err := http.NewRequest("POST", fmt.Sprintf("%s%s", internalServiceEnpoint, r.RequestURI), bytes.NewBuffer(reqeustPayload))
-	if err != nil {
-		shared.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	client := &http.Client{Timeout: time.Second * 10}
-	resp, err := client.Do(req)
-	if err != nil {
-		shared.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	defer resp.Body.Close()
+	client := pb.NewCalculateClient(conn)
 
-	response := shared.CalculateResponse{}
-
-	decoder = json.NewDecoder(resp.Body)
-
-	if err := decoder.Decode(&response); err != nil {
-		shared.RespondError(w, http.StatusInternalServerError, err.Error())
-		return
+	services := map[string]func(ctx context.Context, in *pb.CalculateRequest, opts ...grpc.CallOption) (*pb.CalculateResponnse, error){
+		"/calculator.sum": client.Sum,
+		"/calculator.sub": client.Sub,
+		"/calculator.mul": client.Mul,
+		"/calculator.div": client.Div,
 	}
 
-	shared.RespondJSON(w, http.StatusOK, response)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if calculateFunc, ok := services[r.RequestURI]; ok {
+
+		resp, err := calculateFunc(ctx, &pb.CalculateRequest{
+			A: request.A,
+			B: request.B,
+		})
+		if err != nil {
+			shared.RespondError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		shared.RespondJSON(w, http.StatusOK, shared.CalculateResponse{
+			CalculateRequest: shared.CalculateRequest{
+				A: resp.GetA(),
+				B: resp.GetB(),
+			},
+			Result: resp.GetResult(),
+		})
+	} else {
+		shared.RespondError(w, http.StatusBadRequest, "Not Avalible Service")
+	}
 
 }

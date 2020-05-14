@@ -79,6 +79,7 @@ func main() {
 			req.Header.Set("Content-Type", "application/json")
 			client := &http.Client{Timeout: time.Second * 10}
 			resp, err := client.Do(req)
+
 			if err != nil {
 				PrintError(operator, value, err)
 				return

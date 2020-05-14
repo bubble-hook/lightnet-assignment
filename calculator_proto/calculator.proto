@@ -1,0 +1,26 @@
+syntax="proto3";
+
+
+package calculator_proto;
+
+
+// Message structure
+message CalculateRequest {
+    double a = 1;
+    double b = 2;
+}
+
+
+message CalculateResponnse {
+    double a = 1;
+    double b = 2;
+    double result = 3;
+}
+
+
+service Calculate {
+    rpc Sum (CalculateRequest) returns (CalculateResponnse);
+    rpc Sub (CalculateRequest) returns (CalculateResponnse);
+    rpc Mul (CalculateRequest) returns (CalculateResponnse);
+    rpc Div (CalculateRequest) returns (CalculateResponnse);
+}
